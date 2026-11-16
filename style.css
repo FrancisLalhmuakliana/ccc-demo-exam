@@ -27,6 +27,27 @@ body {
     display: none !important;
 }
 
+.muted-note { color: var(--muted); margin: 10px 0 0; font-size: 14px; }
+.mode-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0 16px; }
+.mode-card { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; min-height: 130px; padding: 16px; text-align: left; color: var(--text); background: #f8fafc; border: 1px solid var(--border); }
+.mode-card strong { color: var(--primary-dark); font-size: 17px; }
+.mode-card span:last-child { color: var(--muted); font-weight: normal; }
+.mode-card.active { border: 2px solid var(--primary); background: #eff6ff; }
+.mode-icon { font-size: 24px; }
+.chapter-setup { margin: 18px 0; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: #f8fafc; }
+.chapter-setup h2 { margin: 0 0 14px; color: var(--primary-dark); }
+.setup-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.setup-fields label { display: grid; gap: 7px; font-weight: bold; }
+.setup-fields select { width: 100%; padding: 11px; border: 1px solid var(--border); border-radius: 8px; background: white; font-size: 15px; }
+.practice-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+.practice-modes label { padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: white; font-weight: bold; cursor: pointer; }
+.practice-modes small { display: block; margin: 5px 0 0 24px; color: var(--muted); font-weight: normal; }
+#start-practice-btn { margin-top: 15px; width: 100%; }
+.learning-feedback { margin: 0 22px 18px; padding: 14px; border-radius: 9px; font-weight: bold; }
+.learning-feedback.correct { color: #166534; background: #dcfce7; }
+.learning-feedback.incorrect { color: #991b1b; background: #fee2e2; }
+.learning-feedback .explanation { display: block; margin-top: 6px; font-weight: normal; }
+
 .screen {
     min-height: 100vh;
 }
@@ -671,4 +692,6 @@ button img {
     .action-row button {
         width: 100%;
     }
+
+    .mode-picker, .setup-fields, .practice-modes { grid-template-columns: 1fr; }
 }
