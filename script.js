@@ -321,6 +321,14 @@ function showReviewScreen() {
 function renderQuestion() {
     const question = examQuestions[currentQuestionIndex];
 
+    if (sessionMode === "practice" && practiceMode === "learning") {
+        submitAnswerBtn.textContent = learningAnswerSubmitted
+            ? (currentQuestionIndex === examQuestions.length - 1 ? "Finish Practice" : "Next Question")
+            : "Check Answer";
+    } else {
+        submitAnswerBtn.textContent = "Submit Answer";
+    }
+
     questionNumberEl.textContent = currentQuestionIndex + 1;
 
     questionHiEl.textContent = question.question_hi;
