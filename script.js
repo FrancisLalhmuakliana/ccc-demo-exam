@@ -13,6 +13,10 @@ let examStartTime = null;
 let examEndTime = null;
 let timerInterval = null;
 let examFinished = false;
+let sessionMode = "mock";
+let practiceMode = "learning";
+let selectedCategory = "";
+let learningAnswerSubmitted = false;
 
 // Screens
 const startScreen = document.getElementById("start-screen");
@@ -23,9 +27,19 @@ const reviewScreen = document.getElementById("review-screen");
 // Start screen
 const studentNameInput = document.getElementById("student-name");
 const startBtn = document.getElementById("start-btn");
+const chooseMockBtn = document.getElementById("choose-mock-btn");
+const chooseChapterBtn = document.getElementById("choose-chapter-btn");
+const chapterSetup = document.getElementById("chapter-setup");
+const categorySelect = document.getElementById("category-select");
+const questionCountSelect = document.getElementById("question-count-select");
+const categoryCount = document.getElementById("category-count");
+const startPracticeBtn = document.getElementById("start-practice-btn");
 
 // Exam screen
 const candidateName = document.getElementById("candidate-name");
+const sessionTitle = document.getElementById("session-title");
+const timerWrap = document.getElementById("timer-wrap");
+const learningFeedback = document.getElementById("learning-feedback");
 const timerEl = document.getElementById("timer");
 const questionNumberEl = document.getElementById("question-number");
 const questionStatusText = document.getElementById("question-status-text");
@@ -65,6 +79,8 @@ const unansweredCountEl = document.getElementById("unanswered-count");
 const percentageValue = document.getElementById("percentage-value");
 const reviewBtn = document.getElementById("review-btn");
 const restartBtn = document.getElementById("restart-btn");
+const homeBtn = document.getElementById("home-btn");
+const resultTitle = document.getElementById("result-title");
 
 // Review screen
 const reviewList = document.getElementById("review-list");
@@ -75,6 +91,7 @@ document.addEventListener("DOMContentLoaded", initializeApp);
 async function initializeApp() {
     try {
         allQuestions = await loadQuestions();
+        populateCategories();
 
         const savedState = loadState();
         const savedName = localStorage.getItem("cccPracticeStudentName");
@@ -141,6 +158,10 @@ async function loadQuestions() {
 
 function attachEventListeners() {
     startBtn.addEventListener("click", startNewExam);
+    chooseMockBtn.addEventListener("click", () => selectHomeMode("mock"));
+    chooseChapterBtn.addEventListener("click", () => selectHomeMode("chapter"));
+    categorySelect.addEventListener("change", updateCategoryCount);
+    startPracticeBtn.addEventListener("click", startChapterPractice);
     submitAnswerBtn.addEventListener("click", submitAnswer);
     resetAnswerBtn.addEventListener("click", resetAnswer);
     finishExamBtn.addEventListener("click", confirmFinishExam);
@@ -148,6 +169,66 @@ function attachEventListeners() {
     reviewBtn.addEventListener("click", showReviewScreen);
     restartBtn.addEventListener("click", restartExam);
     backToResultBtn.addEventListener("click", showResultScreen);
+    homeBtn.addEventListener("click", returnHome);
+}
+
+function populateCategories() {
+    const categories = [...new Set(allQuestions.map((question) => question.category).filter(Boolean))].sort();
+    categorySelect.innerHTML = "";
+    categories.forEach((category) => {
+        const option = document.createElement("option");
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
+    });
+    updateCategoryCount();
+}
+
+function selectHomeMode(mode) {
+    const chapterSelected = mode === "chapter";
+    chooseMockBtn.classList.toggle("active", !chapterSelected);
+    chooseChapterBtn.classList.toggle("active", chapterSelected);
+    chapterSetup.classList.toggle("hidden", !chapterSelected);
+    startBtn.classList.toggle("hidden", chapterSelected);
+}
+
+function updateCategoryCount() {
+    const count = allQuestions.filter((question) => question.category === categorySelect.value).length;
+    categoryCount.textContent = `${count} questions are available in this category.`;
+    [...questionCountSelect.options].forEach((option) => {
+        option.disabled = Number(option.value) > count;
+    });
+    if (Number(questionCountSelect.value) > count) {
+        const available = [...questionCountSelect.options].find((option) => !option.disabled);
+        if (available) questionCountSelect.value = available.value;
+    }
+}
+
+function startChapterPractice() {
+    const name = studentNameInput.value.trim();
+    if (!name) {
+        alert("Please enter your name before starting practice.");
+        studentNameInput.focus();
+        return;
+    }
+    studentName = name;
+    localStorage.setItem("cccPracticeStudentName", studentName);
+    sessionMode = "practice";
+    practiceMode = document.querySelector('input[name="practice-mode"]:checked').value;
+    selectedCategory = categorySelect.value;
+    const count = Number(questionCountSelect.value);
+    const bank = allQuestions.filter((question) => question.category === selectedCategory);
+    if (bank.length < count) {
+        alert(`Only ${bank.length} questions are available in this category.`);
+        return;
+    }
+    examQuestions = pickRandomQuestions(bank, count);
+    answers = {};
+    currentQuestionIndex = 0;
+    examFinished = false;
+    learningAnswerSubmitted = false;
+    showExamScreen();
+    renderQuestion();
 }
 
 function startNewExam() {
@@ -160,6 +241,8 @@ function startNewExam() {
     }
 
     studentName = name;
+    sessionMode = "mock";
+    practiceMode = "exam";
     localStorage.setItem("cccPracticeStudentName", studentName);
 
     examQuestions = pickRandomQuestions(allQuestions, TOTAL_QUESTIONS);
@@ -202,6 +285,15 @@ function showExamScreen() {
     reviewScreen.classList.add("hidden");
 
     candidateName.textContent = `Candidate: ${studentName}`;
+    const isPractice = sessionMode === "practice";
+    sessionTitle.textContent = isPractice ? `${selectedCategory} Practice` : "NIELIT CCC Practice Exam";
+    timerWrap.classList.toggle("hidden", isPractice);
+    finishExamBtn.classList.toggle("hidden", isPractice && practiceMode === "learning");
+    resetAnswerBtn.classList.toggle("hidden", isPractice && practiceMode === "learning");
+    learningFeedback.classList.toggle("hidden", !(isPractice && practiceMode === "learning" && learningAnswerSubmitted));
+    submitAnswerBtn.textContent = isPractice && practiceMode === "learning"
+        ? (learningAnswerSubmitted ? (currentQuestionIndex === examQuestions.length - 1 ? "Finish Practice" : "Next Question") : "Check Answer")
+        : "Submit Answer";
     renderQuestionGrid();
     updateStatusCounts();
 }
@@ -228,6 +320,14 @@ function showReviewScreen() {
 
 function renderQuestion() {
     const question = examQuestions[currentQuestionIndex];
+
+    if (sessionMode === "practice" && practiceMode === "learning") {
+        submitAnswerBtn.textContent = learningAnswerSubmitted
+            ? (currentQuestionIndex === examQuestions.length - 1 ? "Finish Practice" : "Next Question")
+            : "Check Answer";
+    } else {
+        submitAnswerBtn.textContent = "Submit Answer";
+    }
 
     questionNumberEl.textContent = currentQuestionIndex + 1;
 
@@ -263,6 +363,11 @@ function renderQuestion() {
         questionStatusText.style.color = "#991b1b";
     }
 
+    if (sessionMode === "practice" && practiceMode === "learning" && learningAnswerSubmitted) {
+        showLearningFeedback(question, savedAnswer);
+    } else {
+        learningFeedback.classList.add("hidden");
+    }
     updateQuestionGrid();
     updateStatusCounts();
     saveState();
@@ -281,6 +386,31 @@ function getSelectedAnswer() {
 
 function submitAnswer() {
     if (examFinished) return;
+
+    if (sessionMode === "practice" && practiceMode === "learning") {
+        if (learningAnswerSubmitted) {
+            if (currentQuestionIndex === examQuestions.length - 1) {
+                finishPractice();
+                return;
+            }
+            currentQuestionIndex++;
+            learningAnswerSubmitted = false;
+            renderQuestion();
+            return;
+        }
+        const learningChoice = getSelectedAnswer();
+        if (!learningChoice) {
+            alert("Please select an answer before checking.");
+            return;
+        }
+        answers[examQuestions[currentQuestionIndex].id] = learningChoice;
+        learningAnswerSubmitted = true;
+        showLearningFeedback(examQuestions[currentQuestionIndex], learningChoice);
+        submitAnswerBtn.textContent = currentQuestionIndex === examQuestions.length - 1 ? "Finish Practice" : "Next Question";
+        updateQuestionGrid();
+        updateStatusCounts();
+        return;
+    }
 
     const selectedAnswer = getSelectedAnswer();
 
@@ -413,6 +543,18 @@ function confirmFinishExam() {
     }
 }
 
+function finishPractice() {
+    examFinished = true;
+    showResultScreen();
+}
+
+function showLearningFeedback(question, selectedAnswer) {
+    const correct = selectedAnswer === question.correct;
+    const answer = question.options[question.correct];
+    learningFeedback.className = `learning-feedback ${correct ? "correct" : "incorrect"}`;
+    learningFeedback.innerHTML = `${correct ? "Correct!" : "Not quite."} Correct answer: ${question.correct}. ${answer.hi}<span class="explanation">${answer.en}</span>`;
+}
+
 function finishExam(showManualMessage) {
     examFinished = true;
     clearInterval(timerInterval);
@@ -461,9 +603,11 @@ function calculateResult() {
 function renderResult() {
     const result = calculateResult();
 
-    resultMessage.textContent = `${studentName}, you have scored ${result.score} out of ${examQuestions.length}.`;
+    const isPractice = sessionMode === "practice";
+    resultTitle.textContent = isPractice ? "Practice Results" : "Exam Result";
+    resultMessage.textContent = `${studentName}, you scored ${result.score} out of ${examQuestions.length}.`;
     scoreValue.textContent = `${result.score}/${examQuestions.length}`;
-    passFailValue.textContent = result.passed ? "Pass" : "Fail";
+    passFailValue.textContent = isPractice ? "Complete" : (result.passed ? "Pass" : "Fail");
     correctCountEl.textContent = result.correct;
     wrongCountEl.textContent = result.wrong;
     unansweredCountEl.textContent = result.unanswered;
@@ -557,6 +701,17 @@ function restartExam() {
     studentName = savedName;
     localStorage.setItem("cccPracticeStudentName", studentName);
 
+    if (sessionMode === "practice") {
+        const bank = allQuestions.filter((question) => question.category === selectedCategory);
+        examQuestions = pickRandomQuestions(bank, examQuestions.length);
+        answers = {};
+        currentQuestionIndex = 0;
+        examFinished = false;
+        learningAnswerSubmitted = false;
+        showExamScreen();
+        renderQuestion();
+        return;
+    }
     examQuestions = pickRandomQuestions(allQuestions, TOTAL_QUESTIONS);
     answers = {};
     currentQuestionIndex = 0;
@@ -571,6 +726,7 @@ function restartExam() {
 }
 
 function saveState() {
+    if (sessionMode === "practice") return;
     const state = {
         studentName,
         examQuestions,
@@ -600,6 +756,7 @@ function loadState() {
 }
 
 function restoreState(state) {
+    sessionMode = "mock";
     studentName = state.studentName;
     examQuestions = state.examQuestions;
     answers = state.answers || {};
@@ -620,4 +777,15 @@ function restoreState(state) {
         examStartTime = Date.now();
         examEndTime = examStartTime + EXAM_DURATION_MINUTES * 60 * 1000;
     }
+}
+
+function returnHome() {
+    clearInterval(timerInterval);
+    localStorage.removeItem(STORAGE_KEY);
+    sessionMode = "mock";
+    learningAnswerSubmitted = false;
+    showStartScreen();
+    selectHomeMode("mock");
+    const savedName = localStorage.getItem("cccPracticeStudentName");
+    if (savedName) studentNameInput.value = savedName;
 }

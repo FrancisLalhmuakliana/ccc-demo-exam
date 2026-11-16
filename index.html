@@ -43,7 +43,42 @@
                 </ul>
             </div>
 
-            <button id="start-btn" class="primary-btn">Start Exam</button>
+            <div class="mode-picker" aria-label="Choose practice type">
+                <button id="choose-mock-btn" class="mode-card active" type="button">
+                    <span class="mode-icon">⏱</span>
+                    <strong>Full Mock Test</strong>
+                    <span>100 questions · 90 minutes</span>
+                </button>
+                <button id="choose-chapter-btn" class="mode-card" type="button">
+                    <span class="mode-icon">📚</span>
+                    <strong>Chapter-wise Practice</strong>
+                    <span>Practice a topic at your pace</span>
+                </button>
+            </div>
+
+            <div id="chapter-setup" class="chapter-setup hidden">
+                <h2>Chapter-wise Practice</h2>
+                <div class="setup-fields">
+                    <label>Chapter / Category
+                        <select id="category-select" aria-label="Choose a category"></select>
+                    </label>
+                    <label>Number of questions
+                        <select id="question-count-select">
+                            <option value="10">10 questions</option>
+                            <option value="20">20 questions</option>
+                            <option value="30">30 questions</option>
+                            <option value="50">50 questions</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="practice-modes" role="group" aria-label="Practice mode">
+                    <label><input type="radio" name="practice-mode" value="learning" checked /> Learning mode <small>Immediate feedback</small></label>
+                    <label><input type="radio" name="practice-mode" value="exam" /> Exam mode <small>Results after completion</small></label>
+                </div>
+                <p id="category-count" class="muted-note"></p>
+                <button id="start-practice-btn" class="primary-btn" type="button">Start Chapter Practice</button>
+            </div>
+            <button id="start-btn" class="primary-btn" type="button">Start Full Mock Test</button>
         </div>
     </section>
 
@@ -54,12 +89,12 @@
             <div class="header-left">
                 <img src="assets/nielit-logo.png" alt="NIELIT Logo" class="header-logo" />
                 <div>
-                    <h1>NIELIT CCC Practice Exam</h1>
+                    <h1 id="session-title">NIELIT CCC Practice Exam</h1>
                     <p id="candidate-name">Candidate: -</p>
                 </div>
             </div>
 
-            <div class="header-right">
+            <div class="header-right" id="timer-wrap">
                 <div class="timer-box">
                     <img src="assets/icons/timer.svg" alt="" />
                     <span>Time Left:</span>
@@ -119,6 +154,8 @@
                     </div>
                 </div>
 
+                <div id="learning-feedback" class="learning-feedback hidden" role="status" aria-live="polite"></div>
+
                 <div class="action-row answer-action-row">
                     <button id="submit-answer-btn" class="success-btn">
                         <img src="assets/icons/check.svg" alt="" />
@@ -167,7 +204,7 @@
         <div class="result-card">
             <img src="assets/nielit-logo.png" alt="NIELIT Logo" class="logo" />
 
-            <h1>Exam Result</h1>
+            <h1 id="result-title">Exam Result</h1>
             <p id="result-message" class="result-message">You have scored 0 out of 100.</p>
 
             <p id="result-help-text" class="result-help-text">
@@ -212,6 +249,7 @@
                     <img src="assets/icons/restart.svg" alt="" />
                     Restart Exam
                 </button>
+                <button id="home-btn" class="secondary-btn" type="button">Home</button>
             </div>
         </div>
     </section>
